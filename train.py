@@ -95,6 +95,8 @@ def default_config(data='AIR_BJ'):
         config.data.test_start_idx = int(8160 * 11 / 12)
 
     gpu_id = GPU().get_usefuel_gpu(max_memory=6000, condidate_gpu_id=[0,1,2,3,4,6,7,8])
+    #Problem in GPU() definition in gpu_dispatch.py
+    print(gpu_id)
     config.gpu_id = gpu_id
     if gpu_id != None:
         cuda_id = GpuId2CudaId(gpu_id)
@@ -397,7 +399,8 @@ def main(params: dict):
 
 
     try:
-        model = torch.load(model_path, map_location=config.device)
+        model = torch.load(model_path, map_location=config.device, weights_only=False)
+        #model = torch.load(model_path, map_location=config.device, weights_only=True)
         print('best model loaded from: <<', model_path)
     except Exception as err:
         print(err)

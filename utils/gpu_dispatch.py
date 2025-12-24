@@ -68,11 +68,16 @@ class GPU():
     def update_info_dict(self):
         stat_path = self.log_file + '/gpustat.txt'
         cmds = [f'nvidia-smi > {stat_path}']
+        
         cmd_lst(cmds)
 
+        ###PROBLEM HERE!!!!!!######################################################################################################################
+        print("ch4")
+        print(stat_path)
         self.info_dict = self.get_nvidia_smi(stat_path)
 
         self.save()
+
         return self.info_dict
 
 
@@ -87,10 +92,13 @@ class GPU():
     def get_usefuel_gpu(self, max_memory:int, condidate_gpu_id: list): #condidate_id:[0,1,2]
         # self.info_dict = self.load_info_dict()
         try:
+            print("hi11")
+            print(self)
             self.info_dict = self.update_info_dict()
         except Exception as err:
             print('wrong in load gpu info dict', err)
             self.info_dict = {}
+
 
         useful_id = []
         for id, (used, total) in self.info_dict.items():
