@@ -94,7 +94,7 @@ def default_config(data='AIR_BJ'):
         config.data.val_start_idx = int(8760 * 10 / 12) #
         config.data.test_start_idx = int(8160 * 11 / 12)
 
-    gpu_id = GPU().get_usefuel_gpu(max_memory=6000, condidate_gpu_id=[0,1,2,3,4,6,7,8])
+    gpu_id = GPU().get_usefuel_gpu(max_memory=3000, condidate_gpu_id=[0,1,2,3,4,6,7,8])
     #Problem in GPU() definition in gpu_dispatch.py
     print(gpu_id)
     config.gpu_id = gpu_id
@@ -113,11 +113,12 @@ def default_config(data='AIR_BJ'):
     config.model.week_len = 7
     config.model.day_len = config.data.points_per_hour * 24
     config.model.device = device
-    config.model.d_h = 32
+    config.model.d_h = 32 #Embedding dimension D (see equation 17 in paper)
 
     # config for diffusion model
-    config.model.N = 200
+    config.model.N = 200 #related to 4.2 adn 4.3, but details are not clear
     config.model.sample_steps = 200
+    
     config.model.epsilon_theta = 'UGnet'
     config.model.is_label_condition = True
     config.model.beta_end = 0.02
@@ -135,11 +136,11 @@ def default_config(data='AIR_BJ'):
     config.is_test = False  # Whether run the code in the test mode
     config.epoch = 300  # Number of max training epoch
     config.optimizer = "adam"
-    config.lr = 1e-4
-    config.batch_size = 32
-    config.wd = 1e-5
-    config.early_stop = 10
-    config.start_epoch = 0
+    config.lr = 1e-4  #??
+    config.batch_size = 32   #??
+    config.wd = 1e-5  #??
+    config.early_stop = 10  #??
+    config.start_epoch = 0  #??
     config.device = device
     config.logger = Logger()
 
@@ -261,7 +262,7 @@ def main(params: dict):
     # model
     config.model.N = params['N']
     config.T_h = config.model.T_h = params['T_h']
-    config.T_p = config.model.T_p =  params['T_h']
+    config.T_p = config.model.T_p =  params['T_h']  #T_h and T_p doesnt have to be the same, but here both are 12
     config.model.epsilon_theta =  params['epsilon_theta']
     config.model.sample_steps = params['sample_steps']
     config.model.d_h = params['hidden_size']
@@ -294,7 +295,7 @@ def main(params: dict):
     config.model.A = clean_data.adj
 
     model = DiffSTG(config.model)
-    model = model.to(config.device)
+    model = model.to(config.device) # add gpu
 
     # Load training dataset
     train_dataset = TrafficDataset(clean_data, (0 + config.model.T_p, config.data.val_start_idx - config.model.T_p + 1), config)
@@ -348,6 +349,7 @@ def main(params: dict):
 
         n, avg_loss, time_lst = 0, 0, []
         # train diffusion model
+        print("Train Epoch: ", epoch)
         for i, batch in enumerate(train_loader):
             if i > 3 and config.is_test:break
             time_start =  timer()
@@ -392,7 +394,7 @@ def main(params: dict):
             scheduler.step(metrics_val.metrics['mae'])
 
         if metrics_val.best_metrics['epoch'] == epoch:
-            #print('[save model]>> ', model_path)
+            print('[save model]>> ', model_path)
             torch.save(model, model_path)
 
         if epoch - metrics_val.best_metrics['epoch'] > config.early_stop: break  # Early_stop

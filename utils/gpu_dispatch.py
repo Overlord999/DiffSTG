@@ -17,7 +17,7 @@ Doing so can save us the trouble of manually specifying the gpu id,
 especially when running multiple instances in parallel.
 '''
 
-gpu_num = 8 # set the value to the GPU number in your device.
+gpu_num = 1 # set the value to the GPU number in your device.
 def cmd_lst(cmd_lst = []):
     # excute cmd list
     for l in cmd_lst:
@@ -43,18 +43,35 @@ class GPU():
     def get_nvidia_smi(self,fin):
         f = open(fin)
         lines = [l for l in f]
-        gpu_num = 8 # the GPU card number of your device
+        gpu_num = 1 # the GPU card number of your device
         lineno = [9 + 4 * i for i in range(gpu_num)]
+
+        #print("f: ", f)
+        print("lines: ", lines)
+        print("Lineno: ", lineno)
+
 
         info_dict = {}
         for id, idx in enumerate(lineno):
+            print("ID: ", id)
+            print("IDx: ", idx)
+
             info = lines[idx]
+            print(info)
             info = info.split('|')[2]
+            print(info)
             info = info.rstrip(' ').lstrip(' ')
+            print(info)
             used, total = info.split('/')
+            print("Used: ", used)
+            print("Total: ", total)
             used = int(used.rstrip('MiB '))
             total = int(total.rstrip('MiB').lstrip(' '))
+            print("Used: ", used)
+            print("Total: ", total)
             info_dict[int(id)] = [used, total]
+
+            print("")
         return info_dict
 
     def save(self):
@@ -105,6 +122,7 @@ class GPU():
 
             n = (total - used) / max_memory
             n = int(n)
+            print("n: ", n)
             # if n > 1 and int(id) < 4: useful_id.append(int(id))
             if n > 1 and int(id) in condidate_gpu_id: useful_id.append(int(id))
 

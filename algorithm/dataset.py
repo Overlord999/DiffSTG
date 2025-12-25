@@ -40,7 +40,7 @@ class CleanDataset():
         self.data_name = config.data.name
         self.feature_file = config.data.feature_file
         self.val_start_idx = config.data.val_start_idx
-        self.adj = np.load(config.data.spatial)
+        self.adj = np.load(config.data.spatial) #Load adjacency matrix (Check 5.1 in paper to get details)
         self.label, self.feature = self.read_data()
 
         #for stpgcn

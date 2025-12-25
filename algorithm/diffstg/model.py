@@ -52,6 +52,7 @@ class DiffSTG(nn.Module):
         """
         Sample from  q(x_t|x_0) ~ N(x_t; \sqrt\bar\alpha_t * x_0, (1 - \bar\alpha_t)I)
         """
+        # equation 3 from paper
         if eps is None:
             eps = torch.randn_like(x0)
 
@@ -64,6 +65,7 @@ class DiffSTG(nn.Module):
         """
         Sample from p(x_{t-1}|x_t, c)
         """
+        # equation 5 from paper
         eps_theta = self.eps_model(xt, t, c) # c is the condition
         alpha_coef = 1. / (gather(self.alpha, t) ** 0.5)
         eps_coef =  gather(self.beta, t) / (1 - gather(self.alpha_bar, t)) ** 0.5
