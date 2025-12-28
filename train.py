@@ -6,6 +6,7 @@ import numpy as np
 import torch.utils.data
 from easydict import EasyDict as edict
 from timeit import default_timer as timer
+import time
 
 from utils.eval import Metric
 from utils.gpu_dispatch import GPU
@@ -13,6 +14,8 @@ from utils.common_utils import dir_check, to_device, ws, unfold_dict, dict_merge
 
 from algorithm.dataset import CleanDataset, TrafficDataset
 from algorithm.diffstg.model import DiffSTG, save2file
+
+from tqdm import tqdm
 
 def setup_seed(seed):
     import random
@@ -161,8 +164,15 @@ def evals(model, data_loader, epoch, metric, config, clean_data, mode='Test'):
     metrics_history = Metric(T_p=config.model.T_h)
     model.eval()
 
+    print(model.sample_strategy)
     samples, targets = [], []
-    for i, batch in enumerate(data_loader):
+    for i, batch in tqdm(enumerate(data_loader)):
+        evalT1 = time.perf_counter()
+        evalCT = evalT1
+        evalPrevT = evalT1
+        tqdm.write("Eval1 "+str(evalCT - evalPrevT))
+        evalPrevT = evalCT
+
         if i > 0 and config.is_test: break
         time_start = timer()
 
@@ -173,12 +183,20 @@ def evals(model, data_loader, epoch, metric, config, clean_data, mode='Test'):
         targets.append(x.cpu())
         x = x.transpose(1, 3)  # (B, F, V, T)
         x_masked = x_masked.transpose(1, 3)  # (B, F, V, T)
+        
+        evalCT = time.perf_counter()
+        tqdm.write("Eval1-2 "+str(evalCT - evalPrevT))
+        evalPrevT = evalCT
 
         n_samples = 1 if mode == 'Val' else config.n_samples
         # n_samples = config.n_samples
         x_hat = model((x_masked, pos_w, pos_d), n_samples) # (B, n_samples, F, V, T)
         samples.append(x_hat.transpose(2,4).cpu())
 
+        evalCT = time.perf_counter()
+        tqdm.write("Eval2-3 "+str(evalCT - evalPrevT))
+        evalPrevT = evalCT
+        
         if x_hat.shape[-1] != (config.model.T_h + config.model.T_p): x_hat = x_hat.transpose(2,4)
         # assert x.shape == x_hat.shape, f"shape of x ({x.shape}) does not equal to shape of x_hat ({x_hat.shape})"
 
@@ -187,10 +205,18 @@ def evals(model, data_loader, epoch, metric, config, clean_data, mode='Test'):
         x_hat = x_hat.detach()
         f_x, f_x_hat = x[:,:,:,-config.model.T_p:], x_hat[:,:,:,:,-config.model.T_p:] # future
 
+        evalCT = time.perf_counter()
+        tqdm.write("Eval3-4 "+str(evalCT - evalPrevT))
+        evalPrevT = evalCT
+
         _y_true_ = f_x.transpose(1, 3).cpu().numpy()  # y_true: (B, T_p, V, D)
         _y_pred_ = f_x_hat.transpose(2, 4).cpu().numpy() # y_pred: (B, n_samples, T_p, V, D)
         _y_pred_ = np.clip(_y_pred_, 0, np.inf)
         metrics_future.update_metrics(_y_true_, _y_pred_)
+
+        evalCT = time.perf_counter()
+        tqdm.write("Eval4-5 "+str(evalCT - evalPrevT))
+        evalPrevT = evalCT
 
         y_pred.append(_y_pred_)
         y_true.append(_y_true_)
@@ -200,6 +226,11 @@ def evals(model, data_loader, epoch, metric, config, clean_data, mode='Test'):
         _y_pred_ = h_x_hat.transpose(2, 4).cpu().numpy()
         _y_pred_ = np.clip(_y_pred_, 0, np.inf)
         metrics_history.update_metrics(_y_true_, _y_pred_)
+
+        evalCT = time.perf_counter()
+        tqdm.write("Eval5-6 "+str(evalCT - evalPrevT))
+        evalPrevT = evalCT
+        tqdm.write("")
 
     y_true = np.concatenate(y_true, axis=0)
     y_pred = np.concatenate(y_pred, axis=0)
@@ -350,7 +381,8 @@ def main(params: dict):
         n, avg_loss, time_lst = 0, 0, []
         # train diffusion model
         print("Train Epoch: ", epoch)
-        for i, batch in enumerate(train_loader):
+        tqdm_forLoop = tqdm(enumerate(train_loader))
+        for i, batch in tqdm_forLoop:
             if i > 3 and config.is_test:break
             time_start =  timer()
             future, history, pos_w, pos_d = batch # future:(B, T_p, V, F), history: (B, T_h, V, F)
@@ -380,7 +412,8 @@ def main(params: dict):
 
             time_lst.append((timer() - time_start))
             message = f"{i / len(train_loader) + epoch:6.1f}| {avg_loss:0.3f} {np.sum(time_lst):.1f}s"
-            print('\r' + message, end='', flush=True)
+            #print('\r' + message, end='', flush=True)
+            tqdm_forLoop.set_description(message)
 
         config.logger.message_buffer += message
 
@@ -388,11 +421,12 @@ def main(params: dict):
             writer.add_scalar('train/loss', avg_loss, epoch)
         except:
             pass
-
+        
+        print("Before Eval")
         if epoch >= config.start_epoch:
             evals(model, val_loader, epoch, metrics_val, config, clean_data, mode='Val')
             scheduler.step(metrics_val.metrics['mae'])
-
+        print("AfterEval")
         if metrics_val.best_metrics['epoch'] == epoch:
             print('[save model]>> ', model_path)
             torch.save(model, model_path)

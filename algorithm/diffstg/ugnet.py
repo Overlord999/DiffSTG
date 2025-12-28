@@ -79,6 +79,7 @@ class TcnBlock(nn.Module):
 
         self.net = nn.Sequential(self.conv, self.chomp, self.drop)
 
+        #why doesnt shortcut show in model printout
         self.shortcut = nn.Conv2d(c_in, c_out, kernel_size=(1, 1)) if c_in != c_out else None
 
 

@@ -145,7 +145,7 @@ class DiffSTG(nn.Module):
             raise  NotImplementedError
 
     def forward(self, input, n_samples = 1):
-
+        print("Forward enter")
         return self.evaluate(input, n_samples)
 
     def loss(self, x0: torch.Tensor, c: Tuple):
