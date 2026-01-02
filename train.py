@@ -325,6 +325,7 @@ def main(params: dict):
     clean_data = CleanDataset(config)
     config.model.A = clean_data.adj
 
+    print("DiffSTG config here")
     model = DiffSTG(config.model)
     model = model.to(config.device) # add gpu
 
@@ -404,7 +405,7 @@ def main(params: dict):
 
             optimizer.zero_grad()
             loss.backward()
-            optimizer.step()
+            optimizer.step()  
 
             # calculate the moving average training loss
             n += 1

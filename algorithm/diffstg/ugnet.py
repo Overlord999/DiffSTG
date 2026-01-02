@@ -148,7 +148,7 @@ class Downsample(nn.Module):
         return self.conv(x)
 
 
-class  UpBlock(nn.Module):
+class  UpBlock(nn.Module):  
     def __init__(self, c_in, c_out, config):
         super().__init__()
         self.res = ResidualBlock(c_in + c_out, c_out, config, kernel_size=3)
@@ -202,9 +202,10 @@ class UGnet(nn.Module):
         for i in range(n_resolutions):
             out_channels = in_channels * config.channel_multipliers[i]
             for _ in range(self.n_blocks):
+                print("Down " + str(in_channels) + " " + str(out_channels))
                 down.append(DownBlock(in_channels, out_channels, config))
                 in_channels = out_channels
-
+            print(" ")
             # down sample at all resolution except the last
             if i < n_resolutions - 1:
                 down.append(Downsample(in_channels))
@@ -219,6 +220,7 @@ class UGnet(nn.Module):
         for i in reversed(range(n_resolutions)):
             out_channels = in_channels
             for _ in range(self.n_blocks):
+                print("Up " + str(in_channels) + " " + str(out_channels))
                 up.append(UpBlock(in_channels, out_channels, config))
 
             out_channels = in_channels // config.channel_multipliers[i]
@@ -227,6 +229,7 @@ class UGnet(nn.Module):
             # up sample at all resolution except last
             if i > 0:
                 up.append(Upsample(in_channels))
+            print(" ")
 
         self.up = nn.ModuleList(up)
 
