@@ -69,10 +69,12 @@ class DiffSTG(nn.Module):
         eps_theta = self.eps_model(xt, t, c) # c is the condition
         alpha_coef = 1. / (gather(self.alpha, t) ** 0.5)
         eps_coef =  gather(self.beta, t) / (1 - gather(self.alpha_bar, t)) ** 0.5
-        mean = alpha_coef * (xt - eps_coef * eps_theta)
 
-        # var = gather(self.sigma2, t)
-        var = (1 - gather(self.alpha_bar, t-1)) / (1 - gather(self.alpha_bar, t)) * gather(self.beta, t)
+
+        mean = alpha_coef * (xt - eps_coef * eps_theta) # Equation 6
+
+        # var = gather(self.sigma2, t) 
+        var = (1 - gather(self.alpha_bar, t-1)) / (1 - gather(self.alpha_bar, t)) * gather(self.beta, t) #Equation 7
 
         eps = torch.randn(xt.shape, device=xt.device)
 
@@ -155,6 +157,7 @@ class DiffSTG(nn.Module):
         c: The condition, c is a tuple of torch tensor, here c = (feature, pos_w, pos_d)
         """
         #
+        print("In model.loss")
         t = torch.randint(0, self.N, (x0.shape[0],), device=x0.device, dtype=torch.long)
 
         # Note that in the paper, t \in [1, T], but in the code, t \in [0, T-1]
@@ -162,6 +165,17 @@ class DiffSTG(nn.Module):
 
         xt = self.q_xt_x0(x0, t, eps)
         eps_theta = self.eps_model(xt, t, c)
+
+        # print(t.shape)
+        # print(eps.shape)
+        # print(xt.shape)
+        # print(eps_theta.shape)
+
+        # print(t)
+        # print(eps)
+        # print(xt)
+        # print(eps_theta)
+
         return F.mse_loss(eps, eps_theta)
 
 

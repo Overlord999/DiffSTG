@@ -34,6 +34,7 @@ def TimeEmbedding(timesteps: torch.Tensor, embedding_dim: int):
     return emb
 
 
+## Section 4.1 - Spatial Dependency Modeling; Equation 16
 class SpatialBlock(nn.Module):
     def __init__(self, ks, c_in, c_out):
         super(SpatialBlock, self).__init__()
@@ -65,6 +66,7 @@ class Chomp(nn.Module):
         return x[:, :, :, : -self.chomp_size]
 
 
+## Section 4.1 - Temporal Dependency Modeling; Equation 15
 class TcnBlock(nn.Module):
     def __init__(self, c_in, c_out, kernel_size, dilation_size=1, droupout=0.0):
         super().__init__()
@@ -253,7 +255,7 @@ class UGnet(nn.Module):
                 x_masked: (B, F, V, T)
         :return:
         """
-
+        #print("In Ugnet Forward")
         x_masked, pos_w, pos_d = c  # x_masked: (B, F, V, T), pos_w: (B,T,1,1), pos_d: (B,T,1,1)
 
         x = torch.cat((x, x_masked), dim=3) # (B, F, V, 2 * T)

@@ -405,7 +405,8 @@ def main(params: dict):
 
             optimizer.zero_grad()
             loss.backward()
-            optimizer.step()  
+            optimizer.step()
+
 
             # calculate the moving average training loss
             n += 1
